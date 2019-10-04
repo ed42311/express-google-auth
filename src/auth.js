@@ -1,17 +1,27 @@
 const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 
-const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, ROOT_URL } = process.env
+module.exports = (passport) => {
+  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, ROOT_URL } = process.env
 
-passport.use(new GoogleStrategy({
-    clientID: GOOGLE_CLIENT_ID,
-    clientSecret: GOOGLE_CLIENT_SECRET,
-    callbackURL: `${ROOT_URL}/google/callback`,
-  },
-  function(accessToken, refreshToken, profile, done) {
-    console.log(`google strategy`);
-    return done (profile.id)
-  }
-));
+  passport.serializeUser((user, done) => {
+    done(null, user);
+  });
 
-module.exports = passport;
+  passport.deserializeUser((user, done) => {
+    done(null, user);
+  });
+
+  passport.use(new GoogleStrategy({
+        clientID: GOOGLE_CLIENT_ID,
+        clientSecret: GOOGLE_CLIENT_SECRET,
+        callbackURL: `${ROOT_URL}/auth/google/callback`
+    },
+    (token, refreshToken, profile, done) => {
+        return done(null, {
+            profile: profile,
+            token: token
+        });
+    })
+  );
+};

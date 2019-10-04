@@ -1,55 +1,49 @@
-const express = require('express')
-const passport = require('passport')
-const serveStatic = require('express-static-gzip')
-const helmet = require('helmet')
-const session = require('express-session');
+const express = require('express'),
+    app = express(),
+    passport = require('passport'),
+    cookieParser = require('cookie-parser'),
+    cookieSession = require('cookie-session'),
+    helmet = require('helmet')
+    auth = require('./auth');
 
-require('dotenv').config(); 
+require('dotenv').config();
 const { EXPRESS_SECRET } = process.env
-const passportGoogle = require('./auth');
-const app = express()
 
-const router = express.Router();
-
-app.use(helmet())
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
-app.use(session({
-    secret: EXPRESS_SECRET,
-    resave: true,
-    saveUninitialized: true
+auth(passport);
+app.use(passport.initialize());
+app.use(cookieSession({
+  name: 'session',
+  keys: [EXPRESS_SECRET]
 }));
-app.use(passport.initialize())
-// app.use(express.static(path.resolve(__dirname, '../react-ui/build')));
+app.use(cookieParser());
+app.use(helmet);
 
-router.use((req, res, next) => {
-    console.log("something is happening");
-    next();
-})
-
-router.get('/ahead', (req, res) => {
-  res.status(200).send('public face!')
-})
-
-console.log(`hello`);
-router.use('/google',
-  passportGoogle.authenticate('google', { scope: 'https://www.google.com/m8/feeds' }));
-
-router.get('/google/callback',
-  passportGoogle.authenticate('google', { failureRedirect: '/login' }),
-  function(req, res) {
-    res.redirect('/behind');
+app.get('/', (req, res) => {
+  if (req.session.token) {
+    res.cookie('token', req.session.token);
+    res.json({
+        status: 'session cookie set'
+    });
+  } else {
+      res.cookie('token', '')
+      res.json({
+          status: 'session cookie not set'
+      });
   }
-);
-
-router.get('/login', function(req, res, next) {
-  res.redirect('/google');
 });
 
-router.get('/behind', (req, res) => {
-  res.status(200).send('ya got it!')
-})
+app.get('/auth/google', passport.authenticate('google', {
+  scope: ['https://www.googleapis.com/auth/userinfo.profile']
+}));
 
-app.use(router)
+app.get('/auth/google/callback',
+  passport.authenticate('google', {
+      failureRedirect: '/'
+  }),
+  (req, res) => {
+    req.session.token = req.user.token;
+    res.redirect('/');
+  }
+);
 
 module.exports = app
