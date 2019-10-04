@@ -6,7 +6,6 @@ const session = require('express-session');
 
 require('dotenv').config(); 
 const { EXPRESS_SECRET } = process.env
-
 const passportGoogle = require('./auth');
 const app = express()
 
@@ -28,21 +27,26 @@ router.use((req, res, next) => {
     next();
 })
 
-router.use('/',
+router.get('/ahead', (req, res) => {
+  res.status(200).send('public face!')
+})
+
+console.log(`hello`);
+router.use('/google',
   passportGoogle.authenticate('google', { scope: 'https://www.google.com/m8/feeds' }));
 
 router.get('/google/callback',
   passportGoogle.authenticate('google', { failureRedirect: '/login' }),
   function(req, res) {
-    res.redirect('/');
+    res.redirect('/behind');
   }
 );
 
 router.get('/login', function(req, res, next) {
-  res.render('login', { title: 'Please Sign In with:' });
+  res.redirect('/google');
 });
 
-router.get('/', (req, res) => {
+router.get('/behind', (req, res) => {
   res.status(200).send('ya got it!')
 })
 

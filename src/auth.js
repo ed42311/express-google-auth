@@ -1,5 +1,6 @@
 const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+
 const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, ROOT_URL } = process.env
 
 passport.use(new GoogleStrategy({
@@ -8,6 +9,7 @@ passport.use(new GoogleStrategy({
     callbackURL: `${ROOT_URL}/google/callback`,
   },
   function(accessToken, refreshToken, profile, done) {
+    console.log(`google strategy`);
     return done (profile.id)
   }
 ));
